@@ -58,12 +58,14 @@ func main() {
 	acc.Login()
 	fmt.Println("Logged in!")
 
+	fmt.Println("Gathering startup notes...")
 	replies.gatherNotes()
 	comments.gatherNotes()
 
 	for {
 
 		if (runs % 6) == 0 {
+			fmt.Println("Sending hotlist comment...")
 			hotlist, _ := acc.GetHotlist()
 			hotlist.GenerateIDs()
 
@@ -77,18 +79,25 @@ func main() {
 			fmt.Println(randomProgram.URL)
 		}
 
+		fmt.Println("Getting notifications...")
 		notifs := acc.GetUnreadNotifs()
+		if len(notifs.Notifications) > 0 {
+			fmt.Println("Found new notifications...")
+		}
 		for _, notif := range notifs.Notifications {
 			if notif.FeedbackIsReply {
+				fmt.Println("Replying to", notif.Content)
 				acc.SendReply(notif.ParentKey, replies.Chain.Generate((rand.Intn(30) + 10)))
 			}
 		}
+		fmt.Println("Marking all notifications as read...")
 		acc.MarkNotifsAsRead()
 
 		replies.getLatestData()
 		comments.getLatestData()
 
 		runs++
+		fmt.Println("Sleeping...")
 		time.Sleep(time.Minute * 10)
 	}
 }
@@ -97,6 +106,7 @@ func (m *markovData) gatherNotes() {
 	fileName := fmt.Sprintf("./%s.json", m.Name)
 	file, _ := os.OpenFile(fileName, 0x2, os.ModeAppend)
 	if file == nil {
+		fmt.Println("File", fileName, "was not found, creating it...")
 		file, _ = os.Create(fileName)
 		channel := make(chan ka.Notes, m.Amount)
 		go acc.GetNotes(oops, m.Amount, channel, m.Name)
@@ -111,6 +121,7 @@ func (m *markovData) gatherNotes() {
 		byteData, _ := json.MarshalIndent(m.CommentsMap, "", "\t")
 		file.Write(byteData)
 	} else {
+		fmt.Println("File", fileName, "was found, reading...")
 		reader := bufio.NewReader(file)
 		fileBytes, _ := ioutil.ReadAll(reader)
 		json.Unmarshal(fileBytes, &m.CommentsMap)
@@ -123,6 +134,7 @@ func (m *markovData) gatherNotes() {
 
 func (m *markovData) getLatestData() {
 
+	fmt.Println("Gathering latest", m.Name, "data...")
 	changed := false
 
 	fileName := fmt.Sprintf("./%s.json", m.Name)
@@ -142,7 +154,9 @@ func (m *markovData) getLatestData() {
 	}
 
 	if changed {
+		fmt.Println("New data found, writing to file...")
 		mapBytes, _ := json.MarshalIndent(m.CommentsMap, "", "\t")
 		file.Write(mapBytes)
 	}
+	fmt.Println("No new data found...")
 }
