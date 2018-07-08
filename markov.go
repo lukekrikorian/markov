@@ -64,7 +64,7 @@ func main() {
 
 	for {
 
-		if (runs % 6) == 0 {
+		if (runs%6) == 0 && runs > 1 {
 			fmt.Println("Sending hotlist comment...")
 			hotlist, _ := acc.GetHotlist()
 			hotlist.GenerateIDs()
@@ -83,10 +83,12 @@ func main() {
 		notifs := acc.GetUnreadNotifs()
 		if len(notifs.Notifications) > 0 {
 			fmt.Println("Found new notifications...")
+		} else {
+			fmt.Println("No new notifications found...")
 		}
 		for _, notif := range notifs.Notifications {
 			if notif.FeedbackIsReply {
-				fmt.Println("Replying to", notif.Content)
+				fmt.Println("Replying to notif on", notif.ProgramID)
 				acc.SendReply(notif.ParentKey, replies.Chain.Generate((rand.Intn(30) + 10)))
 			}
 		}
@@ -157,6 +159,7 @@ func (m *markovData) getLatestData() {
 		fmt.Println("New data found, writing to file...")
 		mapBytes, _ := json.MarshalIndent(m.CommentsMap, "", "\t")
 		file.Write(mapBytes)
+	} else {
+		fmt.Println("No new data found...")
 	}
-	fmt.Println("No new data found...")
 }
